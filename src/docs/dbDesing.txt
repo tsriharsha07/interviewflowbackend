@@ -1,0 +1,455 @@
+// ====================================================================
+// AUTOMATED INTERVIEW SCHEDULING PLATFORM - DATABASE SCHEMA
+// ====================================================================
+// Final polished version with all optimizations and best practices
+// ====================================================================
+
+// ====================================================================
+// CORE USER MANAGEMENT
+// ====================================================================
+
+Table users {
+  id int [pk, increment]
+  name varchar
+  email varchar [unique, not null]
+  password_hash varchar [not null]
+  role_id int [ref: > roles.id, not null]
+  timezone varchar
+  phone varchar
+  is_active boolean [default: true]
+  last_login datetime
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Indexes {
+    email
+    (role_id)
+    (is_active)
+  }
+}
+
+Table roles {
+  id int [pk, increment]
+  name varchar [unique, not null]
+  description varchar
+  is_active boolean [default: true]
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Indexes {
+    name
+  }
+}
+
+Table modules {
+  id int [pk,increment]
+  name varchar 
+  description varchar
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+}
+
+Table permissions {
+  id int [pk,increment]
+  name varchar
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+}
+
+Table role_permissions {
+  id int [pk,increment]
+  permission_id int [ref:> permissions.id]
+  module_id int [ref:> modules.id]
+  role_id int [ref:>roles.id]
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+}
+
+Table user_preferences {
+  id int [pk, increment]
+  user_id int [ref: > users.id, unique, not null]
+  email_notifications boolean [default: true]
+  reminder_frequency varchar [default: '24h']
+  calendar_sync_enabled boolean [default: false]
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Indexes {
+    user_id
+  }
+}
+
+// ====================================================================
+// JOB MANAGEMENT
+// ====================================================================
+
+Table jobs {
+  id int [pk, increment]
+  title varchar [not null]
+  department varchar
+  description text
+  location varchar  // remote, office, hybrid
+  created_by int [ref: > users.id, not null]
+  is_active boolean [default: true]
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  closed_at datetime
+  
+  Indexes {
+    created_by
+  }
+}
+
+Table job_interviewers {
+  id int [pk, increment]
+  job_id int [ref: > jobs.id, not null]
+  interviewer_id int [ref: > users.id, not null]
+  assigned_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Indexes {
+    job_id
+    interviewer_id
+    (job_id, interviewer_id) [unique]
+  }
+}
+
+// ====================================================================
+// CANDIDATE MANAGEMENT
+// ====================================================================
+
+Table candidates {
+  id int [pk, increment]
+  user_id int [ref: > users.id, not null]
+  job_id int [ref: > jobs.id, not null]
+  current_stage varchar [default: 'applied']  // applied, screening, scheduled, completed, rejected
+  resume_url varchar
+  notes text
+  rejection_reason text
+  applied_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Indexes {
+    user_id
+    (job_id, current_stage)
+    applied_at
+  }
+}
+
+Table candidate_stage_history {
+  id int [pk, increment]
+  candidate_id int [ref: > candidates.id, not null]
+  interview_id int [ref: > interviews.id]
+  job_id int [ref: > jobs.id, not null]
+  stage varchar [not null]
+  changed_by int [ref: > users.id, not null]
+  changed_at datetime [default: `now()`]
+  
+  Indexes {
+    candidate_id
+    interview_id
+    (candidate_id, changed_at)
+  }
+}
+
+// ====================================================================
+// TIME SLOT & AVAILABILITY MANAGEMENT
+// ====================================================================
+
+Table time_slots {
+  id int [pk, increment]
+  name varchar [not null]  // e.g., "Morning Slot", "Early Afternoon"
+  start_time time [not null]
+  end_time time [not null]
+  duration_minutes int [not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Indexes {
+    is_active
+  }
+}
+
+Table availability {
+  id int [pk, increment]
+  user_id int [ref: > users.id, not null]
+  date date [not null]
+  time_slot_id int [ref: > time_slots.id, not null]
+  is_available boolean [default: true]
+  is_booked boolean [default: false]
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Indexes {
+    (user_id, date)
+    (date, time_slot_id, is_available)
+    is_booked
+    (user_id, date, time_slot_id) [unique]
+  }
+}
+
+Table availability_templates {
+  id int [pk, increment]
+  user_id int [ref: > users.id, not null]
+  day_of_week int [not null]  // 0-6 (Monday-Sunday)
+  time_slot_id int [ref: > time_slots.id, not null]
+  is_active boolean [default: true]
+  valid_from date
+  valid_until date
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Indexes {
+    (user_id, is_active)
+    (day_of_week, time_slot_id)
+    (user_id, day_of_week, time_slot_id) [unique]
+  }
+}
+
+// ====================================================================
+// INTERVIEW MANAGEMENT
+// ====================================================================
+
+Table interviews {
+  id int [pk, increment]
+  candidate_id int [ref: > candidates.id, not null]
+  job_id int [ref: > jobs.id, not null]
+  availability_id int [ref: > availability.id, not null]
+  interview_date date [not null]  // denormalized for quick queries
+  time_slot_id int [ref: > time_slots.id, not null]  // denormalized
+  timezone varchar [not null]
+  status varchar [default: 'scheduled']  // scheduled, completed, cancelled, rescheduled
+  meeting_link varchar
+  notes text
+  created_by int [ref: > users.id, not null]
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Indexes {
+    candidate_id
+    job_id
+    (interview_date, time_slot_id)
+    status
+    created_by
+  }
+}
+
+Table interview_participants {
+  id int [pk, increment]
+  interview_id int [ref: > interviews.id, not null]
+  user_id int [ref: > users.id, not null]
+  role_id int [ref: > roles.id, not null]  // interviewer, candidate
+  attendance_status varchar  // attended, no_show, cancelled
+  joined_at datetime
+  left_at datetime
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Indexes {
+    interview_id
+    user_id
+    (interview_id, user_id)
+  }
+}
+
+Table interview_feedback {
+  id int [pk, increment]
+  interview_id int [ref: > interviews.id, not null]
+  interviewer_id int [ref: > users.id, not null]
+  rating int
+  decision varchar  // hire, reject, maybe
+  comments text
+  strengths text
+  weaknesses text
+  submitted_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Indexes {
+    interview_id
+    interviewer_id
+  }
+}
+
+// ====================================================================
+// SCHEDULING & RESCHEDULING
+// ====================================================================
+
+Table scheduling_attempts {
+  id int [pk, increment]
+  candidate_id int [ref: > candidates.id, not null]
+  job_id int [ref: > jobs.id, not null]
+  attempted_at datetime [default: `now()`]
+  success boolean [default: false]
+  matched_availability_id int [ref: > availability.id]  // null if failed
+  failure_reason text
+  created_at datetime [default: `now()`]
+  
+  Indexes {
+    candidate_id
+    job_id
+    attempted_at
+  }
+}
+
+Table reschedule_history {
+  id int [pk, increment]
+  interview_id int [ref: > interviews.id, not null]
+  old_availability_id int [ref: > availability.id, not null]
+  new_availability_id int [ref: > availability.id, not null]
+  reason varchar
+  rescheduled_by int [ref: > users.id, not null]
+  updated_at datetime [default: `now()`]
+  
+  Indexes {
+    interview_id
+    updated_at
+  }
+}
+
+// ====================================================================
+// NOTIFICATIONS & REMINDERS
+// ====================================================================
+
+Table notifications {
+  id int [pk, increment]
+  user_id int [ref: > users.id, not null]
+  interview_id int [ref: > interviews.id]
+  type varchar [not null]  // email, reminder, sms
+  content text [not null]
+  status varchar [default: 'pending']  // pending, sent, failed
+  read boolean [default: false]
+  read_at datetime
+  sent_at datetime
+  retry_count int [default: 0]
+  error_message text
+  created_at datetime [default: `now()`]
+  
+  Indexes {
+    (user_id, read)
+    interview_id
+    (status, sent_at)
+  }
+}
+
+Table reminder_queue {
+  id int [pk, increment]
+  interview_id int [ref: > interviews.id, not null]
+  reminder_time datetime [not null]
+  reminder_type varchar [not null]  // 24h_before, 1h_before, 30m_before
+  processed boolean [default: false]
+  processed_at datetime
+  created_at datetime [default: `now()`]
+  
+  Indexes {
+    (processed, reminder_time)
+    interview_id
+  }
+}
+
+// ====================================================================
+// CALENDAR INTEGRATION
+// ====================================================================
+
+Table calendar_accounts {
+  id int [pk, increment]
+  user_id int [ref: > users.id, not null]
+  provider varchar [not null]  // google, outlook, apple
+  external_calendar_id varchar
+  sync_status varchar [default: 'active']  // active, inactive, error
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Indexes {
+    user_id
+    (user_id, provider) [unique]
+  }
+}
+
+Table calendar_events {
+  id int [pk, increment]
+  interview_id int [ref: > interviews.id, not null]
+  provider varchar [not null]
+  external_event_id varchar
+  last_synced_at datetime
+  created_at datetime [default: `now()`]
+  
+  Indexes {
+    interview_id
+    external_event_id
+  }
+}
+
+// ====================================================================
+// AUDIT & SYSTEM LOGS
+// ====================================================================
+
+Table activity_logs {
+  id int [pk, increment]
+  user_id int [ref: > users.id, not null]
+  action varchar [not null]
+  entity_type varchar [not null]
+  entity_id int [not null]
+  created_at datetime [default: `now()`]
+  
+  Indexes {
+    (user_id, created_at)
+    (entity_type, entity_id)
+    created_at
+  }
+}
+
+Table system_jobs {
+  id int [pk, increment]
+  job_type varchar [not null]  // reminder, cleanup, sync
+  status varchar [default: 'pending']  // pending, running, completed, failed
+  run_at datetime [not null]
+  completed_at datetime
+  error_message text
+  created_at datetime [default: `now()`]
+  
+  Indexes {
+    (status, run_at)
+    job_type
+  }
+}
+
+// ====================================================================
+// SCHEMA NOTES & CONSTRAINTS
+// ====================================================================
+
+// UNIQUE CONSTRAINTS (enforced at database level):
+// - users.email
+// - roles.name
+// - user_preferences.user_id
+// - job_interviewers(job_id, interviewer_id)
+// - availability(user_id, date, time_slot_id)
+// - availability_templates(user_id, day_of_week, time_slot_id)
+// - calendar_accounts(user_id, provider)
+
+// BUSINESS RULES (enforced at application level):
+// 1. Cannot schedule interview on unavailable slot (is_available = false)
+// 2. Cannot double-book availability (is_booked = true)
+// 3. Interview timezone should match candidate's preferred timezone
+// 4. Reminders must be sent before interview time
+// 5. Stage transitions must follow logical order
+// 6. Feedback can only be submitted after interview is completed
+// 7. Rescheduling requires both old and new availability to be valid
+
+// DEFAULT VALUES:
+// - Most boolean flags default to true for active state
+// - Status fields default to 'active' or 'pending'
+// - Timestamps default to current time
+// - Counters (retry_count) default to 0
+
+// PERFORMANCE CONSIDERATIONS:
+// - Composite indexes on frequently queried combinations
+// - Denormalization in interviews table (date, time_slot_id) for faster queries
+// - Separate history/log tables to keep main tables lean
+// - Indexes on foreign keys for join performance
+
+// SCALABILITY NOTES:
+// - Consider partitioning activity_logs by date for large datasets
+// - Archive old interviews/candidates after defined period
+// - Implement soft deletes via is_active flags
+// - Use read replicas for reporting queries
