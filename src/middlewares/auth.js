@@ -30,8 +30,8 @@ export const validateAccessToken = async (req, res, next) => {
     return apiHandler.sendUnauthorizedError(res, null, "Token is missing");
   }
 };
-// ES6 module syntax
-const authorizePermission = (resource, action) => {
+
+export const authorizePermission = (resource, action) => {
   return (req, res, next) => {
     const permissions = req.user.permissions;
 
@@ -49,4 +49,16 @@ const authorizePermission = (resource, action) => {
   };
 };
 
-module.exports = authorizePermission;
+export const createAccessToken = (payload) => {
+  return jwt.sign(payload, process.env.JWT_ACCESS_TOKEN_SECRET, {
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || "15m",
+    issuer: "SriHarsha",
+  });
+};
+
+export const createRefreshToken = (payload) => {
+  return jwt.sign(payload, process.env.JWT_REFRESH_TOKEN_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
+    issuer: "SriHarsha",
+  });
+};
