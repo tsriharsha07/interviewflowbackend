@@ -11,7 +11,9 @@ if (result.error) {
 import express from "express";
 import cors from "cors";
 import http from "http";
-import { executeQuery } from "./src/utils/dbConfig.js";
+
+import { connectRedis } from "./src/config/redisConfig.js";
+
 if (result.error) {
   console.log(`Error Starting the Server: ${result.error}`);
   process.exit(1);
@@ -20,6 +22,7 @@ if (result.error) {
 const port = process.env.PORT;
 
 const app = express();
+await connectRedis();
 
 app.use(
   cors({
