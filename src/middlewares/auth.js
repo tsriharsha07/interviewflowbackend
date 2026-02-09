@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { apiHandler } from "../utils/index.js";
+import { apiHandler, executeStoredProcedure } from "../utils/index.js";
 
 export const validateAccessToken = async (req, res, next) => {
   const authorizationHeader = req.headers.authorization;
@@ -61,4 +61,34 @@ export const createRefreshToken = (payload) => {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
     issuer: "SriHarsha",
   });
+};
+
+export const populatePermissions = async (iRoleId) => {
+  try {
+    const permissionRes = await executeStoredProcedure(
+      "uspGetModulesByRoleId",
+      {
+        iRoleId,
+      },
+    );
+    let permissionMap = permissionRes.recordsets[0];
+    let permissions = transformPermissions(permissionMap);
+
+    req.user.permissions = permissions;
+  } catch (error) {
+    console.log("Error occured", error);
+  }
+};
+
+const transformPermissions = (permissionMap) => {
+  let permissions = {};
+  permissionMap.forEach((t) => {
+    let module = row.ModuleName;
+    let permission = row.PermissionName;
+    if (!permissions[module]) {
+      permissions[module] = [];
+    }
+    permissions[module].push(permission);
+  });
+  return permissions;
 };
