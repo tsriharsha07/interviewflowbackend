@@ -396,6 +396,133 @@ CREATE TABLE tblSystemJobs (
 );
 CREATE INDEX idx_system_jobs_status_run ON tblSystemJobs(sStatus, dtRunAt);
 CREATE INDEX idx_system_jobs_job_type ON tblSystemJobs(sJobType);
+-- ====================================================================
+-- COMPANY MANAGEMENT
+-- ====================================================================
+
+CREATE TABLE tblCompanies (
+    iCompanyId INT IDENTITY(1,1) PRIMARY KEY,
+    sName NVARCHAR(255) NOT NULL,
+    sIndustry NVARCHAR(100),
+    sWebsite NVARCHAR(255),
+    sAddress NVARCHAR(MAX),
+    sCity NVARCHAR(100),
+    sState NVARCHAR(100),
+    sCountry NVARCHAR(100),
+    sPostalCode NVARCHAR(20),
+    sLogoUrl NVARCHAR(MAX),
+    sPrimaryContactEmail NVARCHAR(255),
+    sPrimaryContactPhone NVARCHAR(50),
+    bIsActive BIT DEFAULT 1,
+    dtCreatedAt DATETIME2 DEFAULT GETDATE(),
+    dtUpdatedAt DATETIME2 DEFAULT GETDATE()
+);
+CREATE INDEX idx_companies_name ON tblCompanies(sName);
+CREATE INDEX idx_companies_is_active ON tblCompanies(bIsActive);
+
+-- ====================================================================
+-- ROLE-SPECIFIC PROFILES
+-- ====================================================================
+
+CREATE TABLE tblInterviewers (
+    iInterviewerId INT IDENTITY(1,1) PRIMARY KEY,
+    iUserId INT UNIQUE NOT NULL,
+    iCompanyId INT NOT NULL,
+    sTitle NVARCHAR(255),
+    sDepartment NVARCHAR(255),
+    sExpertiseAreas NVARCHAR(MAX),  -- JSON array or comma-separated
+    iMaxInterviewsPerDay INT DEFAULT 3,
+    iMaxInterviewsPerWeek INT DEFAULT 15,
+    sPreferredInterviewDuration INT DEFAULT 60,  -- minutes
+    bIsActive BIT DEFAULT 1,
+    dtCreatedAt DATETIME2 DEFAULT GETDATE(),
+    dtUpdatedAt DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT fk_interviewers_user FOREIGN KEY (iUserId) REFERENCES tblUsers(iUserId),
+    CONSTRAINT fk_interviewers_company FOREIGN KEY (iCompanyId) REFERENCES tblCompanies(iCompanyId)
+);
+CREATE INDEX idx_interviewers_user_id ON tblInterviewers(iUserId);
+CREATE INDEX idx_interviewers_company_id ON tblInterviewers(iCompanyId);
+CREATE INDEX idx_interviewers_is_active ON tblInterviewers(bIsActive);
+
+CREATE TABLE tblRecruiters (
+    iRecruiterId INT IDENTITY(1,1) PRIMARY KEY,
+    iUserId INT UNIQUE NOT NULL,
+    iCompanyId INT NOT NULL,
+    sTitle NVARCHAR(255),
+    sDepartment NVARCHAR(255),
+    sSpecialization NVARCHAR(MAX),  -- e.g., "Technical, Engineering, Sales"
+    iActiveJobsCount INT DEFAULT 0,
+    iCandidatesHiredCount INT DEFAULT 0,
+    bIsActive BIT DEFAULT 1,
+    dtCreatedAt DATETIME2 DEFAULT GETDATE(),
+    dtUpdatedAt DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT fk_recruiters_user FOREIGN KEY (iUserId) REFERENCES tblUsers(iUserId),
+    CONSTRAINT fk_recruiters_company FOREIGN KEY (iCompanyId) REFERENCES tblCompanies(iCompanyId)
+);
+CREATE INDEX idx_recruiters_user_id ON tblRecruiters(iUserId);
+CREATE INDEX idx_recruiters_company_id ON tblRecruiters(iCompanyId);
+CREATE INDEX idx_recruiters_is_active ON tblRecruiters(bIsActive);
+
+CREATE TABLE tblCandidateProfiles (
+    iCandidateProfileId INT IDENTITY(1,1) PRIMARY KEY,
+    iUserId INT UNIQUE NOT NULL,
+    sLinkedInUrl NVARCHAR(500),
+    sGithubUrl NVARCHAR(500),
+    sPortfolioUrl NVARCHAR(500),
+    sCurrentCompany NVARCHAR(255),
+    sCurrentTitle NVARCHAR(255),
+    iYearsOfExperience INT,
+    sSkills NVARCHAR(MAX),  -- JSON array or comma-separated
+    sEducation NVARCHAR(MAX),  -- JSON object
+    sPreviousCompanies NVARCHAR(MAX),  -- JSON array
+    sExpectedSalary NVARCHAR(100),
+    sNoticePeriod NVARCHAR(100),  -- e.g., "Immediate", "30 days", "60 days"
+    bIsOpenToRelocation BIT DEFAULT 0,
+    bIsOpenToRemote BIT DEFAULT 1,
+    dtCreatedAt DATETIME2 DEFAULT GETDATE(),
+    dtUpdatedAt DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT fk_candidate_profiles_user FOREIGN KEY (iUserId) REFERENCES tblUsers(iUserId)
+);
+CREATE INDEX idx_candidate_profiles_user_id ON tblCandidateProfiles(iUserId);
+
+-- ====================================================================
+-- JOB RECRUITER ASSIGNMENT
+-- ====================================================================
+
+CREATE TABLE tblJobRecruiters (
+    iJobRecruiterId INT IDENTITY(1,1) PRIMARY KEY,
+    iJobId INT NOT NULL,
+    iRecruiterId INT NOT NULL,
+    bIsPrimaryRecruiter BIT DEFAULT 0,  -- one primary recruiter per job
+    dtAssignedAt DATETIME2 DEFAULT GETDATE(),
+    dtUpdatedAt DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT fk_job_recruiters_job FOREIGN KEY (iJobId) REFERENCES tblJobs(iJobId),
+    CONSTRAINT fk_job_recruiters_recruiter FOREIGN KEY (iRecruiterId) REFERENCES tblRecruiters(iRecruiterId),
+    CONSTRAINT uq_job_recruiters UNIQUE (iJobId, iRecruiterId)
+);
+CREATE INDEX idx_job_recruiters_job_id ON tblJobRecruiters(iJobId);
+CREATE INDEX idx_job_recruiters_recruiter_id ON tblJobRecruiters(iRecruiterId);
+CREATE INDEX idx_job_recruiters_primary ON tblJobRecruiters(iJobId, bIsPrimaryRecruiter);
+
+-- Add company reference to tblUsers
+ALTER TABLE tblUsers
+ADD iCompanyId INT NULL,
+    CONSTRAINT fk_users_company FOREIGN KEY (iCompanyId) REFERENCES tblCompanies(iCompanyId);
+CREATE INDEX idx_users_company_id ON tblUsers(iCompanyId);
+
+-- Add company reference to tblJobs
+ALTER TABLE tblJobs
+ADD iCompanyId INT NOT NULL,
+    CONSTRAINT fk_jobs_company FOREIGN KEY (iCompanyId) REFERENCES tblCompanies(iCompanyId);
+CREATE INDEX idx_jobs_company_id ON tblJobs(iCompanyId);
+
+-- Update tblJobInterviewers to reference tblInterviewers instead of tblUsers
+ALTER TABLE tblJobInterviewers
+DROP CONSTRAINT fk_job_interviewers_interviewer;
+
+ALTER TABLE tblJobInterviewers
+ADD CONSTRAINT fk_job_interviewers_interviewer 
+    FOREIGN KEY (iInterviewerId) REFERENCES tblInterviewers(iInterviewerId);
 
 -- ====================================================================
 -- SCHEMA NOTES

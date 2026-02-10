@@ -23,26 +23,22 @@ export async function deleteCache(key) {
    RBAC / PERMISSIONS
 =========================== */
 
-export async function cacheUserPermissions(userId, permissions, ttl = 3600) {
-  await setCache(`permissions:${userId}`, permissions, ttl);
+export async function cacheRolePermissions(role, permissions, ttl = 3600) {
+  await setCache(`permissions:${role}`, permissions, ttl);
 }
 
-export async function getUserPermissions(userId) {
-  return await getCache(`permissions:${userId}`);
+export async function getRolePermissions(role) {
+  return await getCache(`permissions:${role}`);
 }
 
-/* ===========================
-   JWT / SESSION
-=========================== */
-
-export async function storeRefreshToken(userId, token, ttl = 7 * 24 * 60 * 60) {
-  await redisClient.set(`refresh:${userId}`, token, { EX: ttl });
+export async function storeRefreshToken(jti, token, ttl = 1 * 24 * 60 * 60) {
+  await redisClient.set(`refresh:${jti}`, token, { EX: ttl });
 }
 
-export async function getRefreshToken(userId) {
-  return await redisClient.get(`refresh:${userId}`);
+export async function getRefreshToken(jti) {
+  return await redisClient.get(`refresh:${jti}`);
 }
 
-export async function revokeRefreshToken(userId) {
-  await redisClient.del(`refresh:${userId}`);
+export async function revokeRefreshToken(jti) {
+  await redisClient.del(`refresh:${jti}`);
 }

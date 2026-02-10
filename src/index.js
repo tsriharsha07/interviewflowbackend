@@ -11,8 +11,9 @@ if (result.error) {
 import express from "express";
 import cors from "cors";
 import http from "http";
+import authRouter from "./routes/auth.routes.js";
 
-import { connectRedis } from "./src/config/redisConfig.js";
+import { connectRedis } from "./config/redisConfig.js";
 
 if (result.error) {
   console.log(`Error Starting the Server: ${result.error}`);
@@ -39,6 +40,8 @@ app.use(
     origin: "*",
   }),
 );
+
+app.use("/api/v1", authRouter);
 
 app.use((req, res, next) => {
   res.status(404).json({

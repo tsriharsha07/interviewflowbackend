@@ -1,5 +1,11 @@
 import jwt from "jsonwebtoken";
 import { apiHandler, executeStoredProcedure } from "../utils/index.js";
+import {
+  cacheRolePermissions,
+  getRolePermissions,
+  storeRefreshToken,
+} from "../services/redis-service.js";
+import { v4 as uuidv4 } from "uuid";
 
 export const validateAccessToken = async (req, res, next) => {
   const authorizationHeader = req.headers.authorization;
@@ -56,31 +62,60 @@ export const createAccessToken = (payload) => {
   });
 };
 
-export const createRefreshToken = (payload) => {
-  return jwt.sign(payload, process.env.JWT_REFRESH_TOKEN_SECRET, {
-    expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
-    issuer: "SriHarsha",
-  });
+export const createRefreshToken = async (userId) => {
+  const jti = uuidv4();
+
+  const token = jwt.sign(
+    {
+      sub: userId,
+      jti,
+    },
+    process.env.JWT_REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "1d",
+      issuer: "SriHarsha",
+    },
+  );
+  await storeRefreshToken(jti, token);
+
+  return token;
 };
 
-export const populatePermissions = async (iRoleId) => {
+export const populatePermissions = async (req, res, next) => {
   try {
+    const roleId = req.user.iRoleId;
+    if (!roleId) {
+      return res.status(401).json({ message: "Role not found" });
+    }
+
+    // 1️⃣ Check Redis (ROLE-WISE)
+    const cachedPermissions = await getRolePermissions(roleId);
+    if (cachedPermissions) {
+      req.user.permissions = cachedPermissions;
+      return next();
+    }
+
+    // 2️⃣ Fetch from DB
     const permissionRes = await executeStoredProcedure(
       "uspGetModulesByRoleId",
-      {
-        iRoleId,
-      },
+      { iRoleId: roleId },
     );
-    let permissionMap = permissionRes.recordsets[0];
-    let permissions = transformPermissions(permissionMap);
 
+    const permissionMap = permissionRes.recordsets[0];
+    const permissions = transformPermissions(permissionMap);
+
+    // 3️⃣ Attach + cache
     req.user.permissions = permissions;
+    await cacheRolePermissions(roleId, permissions);
+
+    next();
   } catch (error) {
-    console.log("Error occured", error);
+    console.error("populatePermissions error:", error);
+    return res.status(500).json({ message: "Failed to load permissions" });
   }
 };
 
-const transformPermissions = (permissionMap) => {
+export const transformPermissions = (permissionMap) => {
   let permissions = {};
   permissionMap.forEach((t) => {
     let module = row.ModuleName;
