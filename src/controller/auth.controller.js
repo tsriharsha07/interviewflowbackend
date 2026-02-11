@@ -74,34 +74,94 @@ const login = async (req, res, next) => {
   }
 };
 
-const register = async (req, res, next) => {
+const register = async (req, res) => {
   try {
-    const { sName, sEmail, sPassword, sPhone, iRoleId } = req.body;
-    const existingUser = await executeQuery(
-      "SELECT 1 FROM tblUsers WHERE sEmail=@sEmail",
-      { sEmail },
-    );
-
-    if (existingUser.length) {
-      return apiHandler.sendError(res, null, "Email already registered");
-    }
-
-    if (!sName || !sEmail || !sPassword || !sPhone || !iRoleId) {
-      return apiHandler.sendServerError(res, null, "Missing Fields!");
-    }
-    const password = await hashPassword(sPassword);
-    const registerUser = await executeStoredProcedure("uspRegisterUser", {
+    const {
+      // USER
       sName,
       sEmail,
-      sPasswordHash: password,
+      sPassword,
       sPhone,
       iRoleId,
+
+      // COMPANY (optional)
+      sCompanyName,
+      sIndustry,
+      sWebsite,
+
+      // INTERVIEWER
+      sTitle,
+      sDepartment,
+      iCompanyId,
+      sExpertiseAreas,
+      iMaxInterviewsPerDay,
+      iInterviewDuration,
+      // RECRUITER
+      sSpecialization,
+
+      // CANDIDATE
+      sLinkedInUrl,
+      sGithubUrl,
+      sSkills,
+      iYearsOfExperience,
+      sExpectedSalary,
+      sNoticePeriod,
+      bIsOpenToRelocation,
+      bIsOpenToRemote,
+      sCurrentCompany,
+      sCurrentTitle,
+    } = req.body;
+
+    if (!sName || !sEmail || !sPassword || !sPhone || !iRoleId) {
+      return apiHandler.sendError(res, null, "Missing required fields");
+    }
+
+    const passwordHash = await hashPassword(sPassword);
+
+    const result = await executeStoredProcedure("uspRegisterUser", {
+      sName,
+      sEmail,
+      sPasswordHash: passwordHash,
+      sPhone,
+      iRoleId,
+
+      // Company
+      sCompanyName,
+      sIndustry,
+      sWebsite,
+
+      // Interviewer
+      sTitle,
+      sDepartment,
+      sExpertiseAreas,
+      iMaxInterviewsPerDay,
+
+      // Recruiter
+      sSpecialization,
+
+      // Candidate
+      sLinkedInUrl,
+      sGithubUrl,
+      sSkills,
+      iYearsOfExperience,
+      iInterviewDuration,
+      sExpectedSalary,
+      sNoticePeriod,
+      bIsOpenToRelocation,
+      bIsOpenToRemote,
+      sCurrentCompany,
+      sCurrentTitle,
+      iCompanyId,
     });
 
-    return apiHandler.sendSucess(res, null, "User Registered successfully!");
-  } catch (error) {
-    console.log("Error logging in", error);
-    return apiHandler.sendError(res, null, "Error occured during login!");
+    return apiHandler.sendSucess(res, result, "User registered successfully");
+  } catch (err) {
+    console.error(err);
+    return apiHandler.sendError(
+      res,
+      null,
+      err.message || "Registration failed",
+    );
   }
 };
 
