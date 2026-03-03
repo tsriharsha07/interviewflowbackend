@@ -2,14 +2,14 @@ import {
   createAccessToken,
   createRefreshToken,
   transformPermissions,
-} from "../middlewares/auth";
+} from "../middlewares/auth.js";
 import {
   comparePassword,
   executeQuery,
   executeStoredProcedure,
   hashPassword,
-} from "../utils";
-import { apiHandler } from "../utils/apiHandler";
+  apiHandler,
+} from "../utils/index.js";
 
 const login = async (req, res, next) => {
   try {
@@ -18,7 +18,7 @@ const login = async (req, res, next) => {
       return apiHandler.sendError(res, null, "Missing Feilds!");
     }
     const checkEmailExists = await executeQuery(
-      "SELECT iUserId,sEmail,sPasswordHash FROM tblUsers where sEmail=@sEmail",
+      "SELECT iId,sEmail,sPasswordHash FROM tblUsers where sEmail=@sEmail",
       {
         sEmail,
       },
@@ -40,29 +40,17 @@ const login = async (req, res, next) => {
 
     const userData = getUserData.recordsets[0];
 
-    const permissionRes = await executeStoredProcedure(
-      "uspGetModulesByRoleId",
-      { iRoleId: userData[0]?.iRoleId },
-    );
-
-    const permissionMap = permissionRes.recordsets[0];
-    const permissions = transformPermissions(permissionMap);
-
     const accessToken = createAccessToken({
       iUserId: userData[0].iUserId,
-      iRoleId: userData[0].iRoleId,
     });
 
-    const refreshToken = createRefreshToken({
+    const refreshToken = await createRefreshToken({
       iUserId: userData[0].iUserId,
-      iRoleId: userData[0].iRoleId,
     });
-
     return apiHandler.sendSucess(
       res,
       {
         userData,
-        permissions,
         accessToken,
         refreshToken,
       },
@@ -78,80 +66,21 @@ const register = async (req, res) => {
   try {
     const {
       // USER
-      sName,
       sEmail,
       sPassword,
-      sPhone,
-      iRoleId,
-
-      // COMPANY (optional)
-      sCompanyName,
-      sIndustry,
-      sWebsite,
-
-      // INTERVIEWER
-      sTitle,
-      sDepartment,
-      iCompanyId,
-      sExpertiseAreas,
-      iMaxInterviewsPerDay,
-      iInterviewDuration,
-      // RECRUITER
-      sSpecialization,
-
-      // CANDIDATE
-      sLinkedInUrl,
-      sGithubUrl,
-      sSkills,
-      iYearsOfExperience,
-      sExpectedSalary,
-      sNoticePeriod,
-      bIsOpenToRelocation,
-      bIsOpenToRemote,
-      sCurrentCompany,
-      sCurrentTitle,
+      sFullName,
     } = req.body;
 
-    if (!sName || !sEmail || !sPassword || !sPhone || !iRoleId) {
+    if (!sEmail || !sPassword || !sFullName) {
       return apiHandler.sendError(res, null, "Missing required fields");
     }
 
     const passwordHash = await hashPassword(sPassword);
 
     const result = await executeStoredProcedure("uspRegisterUser", {
-      sName,
       sEmail,
       sPasswordHash: passwordHash,
-      sPhone,
-      iRoleId,
-
-      // Company
-      sCompanyName,
-      sIndustry,
-      sWebsite,
-
-      // Interviewer
-      sTitle,
-      sDepartment,
-      sExpertiseAreas,
-      iMaxInterviewsPerDay,
-
-      // Recruiter
-      sSpecialization,
-
-      // Candidate
-      sLinkedInUrl,
-      sGithubUrl,
-      sSkills,
-      iYearsOfExperience,
-      iInterviewDuration,
-      sExpectedSalary,
-      sNoticePeriod,
-      bIsOpenToRelocation,
-      bIsOpenToRemote,
-      sCurrentCompany,
-      sCurrentTitle,
-      iCompanyId,
+      sFullName,
     });
 
     return apiHandler.sendSucess(res, result, "User registered successfully");

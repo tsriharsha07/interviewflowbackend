@@ -76,8 +76,7 @@ export const createRefreshToken = async (userId) => {
       issuer: "SriHarsha",
     },
   );
-  await storeRefreshToken(jti, token);
-
+  // await storeRefreshToken(jti, token);
   return token;
 };
 
