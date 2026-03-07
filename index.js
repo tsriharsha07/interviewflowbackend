@@ -43,6 +43,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 // Response interceptor BEFORE routes
+await connectRedis();
 app.use((req, res, next) => {
   const oldJson = res.json;
   res.json = (body) => {

@@ -1,6 +1,6 @@
 USE [interviewflow]
 GO
-/****** Object:  Table [dbo].[tblActivityLogs]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblActivityLogs]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -23,7 +23,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblAttachments]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblAttachments]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -48,7 +48,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblBoardPresence]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblBoardPresence]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -66,7 +66,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblBoards]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblBoards]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -81,13 +81,14 @@ CREATE TABLE [dbo].[tblBoards](
 	[iCreatedBy] [int] NOT NULL,
 	[dtCreatedAt] [datetime] NULL,
 	[dtDeletedAt] [datetime] NULL,
+	[dtUpdatedAt] [datetime] NOT NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[iId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblChatChannels]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblChatChannels]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -107,7 +108,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblChatMessageReactions]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblChatMessageReactions]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -121,10 +122,16 @@ CREATE TABLE [dbo].[tblChatMessageReactions](
 PRIMARY KEY CLUSTERED 
 (
 	[iId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_ChatMessageReactions_UserMessageEmoji] UNIQUE NONCLUSTERED 
+(
+	[iMessageId] ASC,
+	[iUserId] ASC,
+	[sEmoji] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblChatMessages]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblChatMessages]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -145,7 +152,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblChatReadReceipts]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblChatReadReceipts]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -159,10 +166,15 @@ CREATE TABLE [dbo].[tblChatReadReceipts](
 PRIMARY KEY CLUSTERED 
 (
 	[iId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_ChatReadReceipts_ChannelUser] UNIQUE NONCLUSTERED 
+(
+	[iChannelId] ASC,
+	[iUserId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblColumns]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblColumns]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -182,7 +194,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblCommentReactions]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblCommentReactions]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -196,10 +208,16 @@ CREATE TABLE [dbo].[tblCommentReactions](
 PRIMARY KEY CLUSTERED 
 (
 	[iId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_CommentReactions_UserCommentEmoji] UNIQUE NONCLUSTERED 
+(
+	[iCommentId] ASC,
+	[iUserId] ASC,
+	[sEmoji] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblComments]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblComments]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -220,7 +238,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblJobLogs]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblJobLogs]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -243,7 +261,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblLabels]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblLabels]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -261,7 +279,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblModules]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblModules]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -278,7 +296,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblNotificationPreferences]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblNotificationPreferences]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -304,7 +322,7 @@ UNIQUE NONCLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblNotifications]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblNotifications]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -322,13 +340,14 @@ CREATE TABLE [dbo].[tblNotifications](
 	[bIsRead] [bit] NULL,
 	[dtReadAt] [datetime] NULL,
 	[dtCreatedAt] [datetime] NULL,
+	[iWorkspaceId] [int] NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[iId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblPermissions]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblPermissions]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -344,7 +363,33 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblProjectMembers]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblProjectInvitations]    Script Date: 03-03-2026 20:39:58 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[tblProjectInvitations](
+	[iId] [int] IDENTITY(1,1) NOT NULL,
+	[iProjectId] [int] NOT NULL,
+	[iWorkspaceId] [int] NOT NULL,
+	[iInvitedBy] [int] NOT NULL,
+	[sEmail] [nvarchar](255) NOT NULL,
+	[iRoleId] [int] NOT NULL,
+	[sTokenHash] [nvarchar](255) NOT NULL,
+	[dtExpiresAt] [datetime] NOT NULL,
+	[dtAcceptedAt] [datetime] NULL,
+	[dtCreatedAt] [datetime] NOT NULL,
+ CONSTRAINT [PK_tblProjectInvitations] PRIMARY KEY CLUSTERED 
+(
+	[iId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_tblProjectInvitations_TokenHash] UNIQUE NONCLUSTERED 
+(
+	[sTokenHash] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[tblProjectMembers]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -359,10 +404,15 @@ CREATE TABLE [dbo].[tblProjectMembers](
 PRIMARY KEY CLUSTERED 
 (
 	[iId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_ProjectMembers_ProjectUser] UNIQUE NONCLUSTERED 
+(
+	[iProjectId] ASC,
+	[iUserId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblProjects]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblProjects]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -387,7 +437,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblRefreshTokens]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblRefreshTokens]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -411,7 +461,7 @@ UNIQUE NONCLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblRoleChangeLogs]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblRoleChangeLogs]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -433,25 +483,31 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblRolePermissions]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblRolePermissions]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[tblRolePermissions](
 	[iRolePermissionId] [int] IDENTITY(1,1) NOT NULL,
-	[iPermissionId] [int] NULL,
-	[iModuleId] [int] NULL,
-	[iRoleId] [int] NULL,
+	[iPermissionId] [int] NOT NULL,
+	[iModuleId] [int] NOT NULL,
+	[iRoleId] [int] NOT NULL,
 	[dtCreatedAt] [datetime2](7) NULL,
 	[dtUpdatedAt] [datetime2](7) NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[iRolePermissionId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_RolePermissions_RolePermissionModule] UNIQUE NONCLUSTERED 
+(
+	[iRoleId] ASC,
+	[iPermissionId] ASC,
+	[iModuleId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblRoles]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblRoles]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -463,6 +519,7 @@ CREATE TABLE [dbo].[tblRoles](
 	[bIsActive] [bit] NULL,
 	[dtCreatedAt] [datetime2](7) NULL,
 	[dtUpdatedAt] [datetime2](7) NULL,
+	[sScope] [nvarchar](50) NOT NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[iRoleId] ASC
@@ -473,7 +530,7 @@ UNIQUE NONCLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblSearchIndex]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblSearchIndex]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -491,7 +548,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblTaskAssignees]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblTaskAssignees]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -505,10 +562,15 @@ CREATE TABLE [dbo].[tblTaskAssignees](
 PRIMARY KEY CLUSTERED 
 (
 	[iId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_TaskAssignees_TaskUser] UNIQUE NONCLUSTERED 
+(
+	[iTaskId] ASC,
+	[iUserId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblTaskLabels]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblTaskLabels]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -523,7 +585,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblTasks]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblTasks]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -557,7 +619,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblTaskWatchers]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblTaskWatchers]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -570,10 +632,15 @@ CREATE TABLE [dbo].[tblTaskWatchers](
 PRIMARY KEY CLUSTERED 
 (
 	[iId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_TaskWatchers_TaskUser] UNIQUE NONCLUSTERED 
+(
+	[iTaskId] ASC,
+	[iUserId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblUsers]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblUsers]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -588,8 +655,8 @@ CREATE TABLE [dbo].[tblUsers](
 	[dtLastActiveAt] [datetime] NULL,
 	[dtCreatedAt] [datetime] NULL,
 	[dtDeletedAt] [datetime] NULL,
-	[iRoleId] [int] NULL,
 	[bIsActive] [bit] NULL,
+	[bIsSuperAdmin] [bit] NOT NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[iId] ASC
@@ -600,7 +667,7 @@ UNIQUE NONCLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblWorkspaceInvitations]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblWorkspaceInvitations]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -610,11 +677,11 @@ CREATE TABLE [dbo].[tblWorkspaceInvitations](
 	[iWorkspaceId] [int] NOT NULL,
 	[iInvitedBy] [int] NOT NULL,
 	[sEmail] [nvarchar](255) NOT NULL,
-	[sRole] [nvarchar](50) NOT NULL,
 	[sTokenHash] [nvarchar](255) NOT NULL,
 	[dtExpiresAt] [datetime] NOT NULL,
 	[dtAcceptedAt] [datetime] NULL,
 	[dtCreatedAt] [datetime] NULL,
+	[iRoleId] [int] NOT NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[iId] ASC
@@ -625,7 +692,7 @@ UNIQUE NONCLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblWorkspaceMembers]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblWorkspaceMembers]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -634,16 +701,21 @@ CREATE TABLE [dbo].[tblWorkspaceMembers](
 	[iId] [int] IDENTITY(1,1) NOT NULL,
 	[iWorkspaceId] [int] NOT NULL,
 	[iUserId] [int] NOT NULL,
-	[sRole] [nvarchar](50) NOT NULL,
 	[dtJoinedAt] [datetime] NULL,
 	[iInvitedBy] [int] NULL,
+	[iRoleId] [int] NOT NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[iId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_WorkspaceMembers_WorkspaceUser] UNIQUE NONCLUSTERED 
+(
+	[iWorkspaceId] ASC,
+	[iUserId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[tblWorkspaces]    Script Date: 03-03-2026 15:06:58 ******/
+/****** Object:  Table [dbo].[tblWorkspaces]    Script Date: 03-03-2026 20:39:58 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -655,7 +727,6 @@ CREATE TABLE [dbo].[tblWorkspaces](
 	[sDescription] [nvarchar](max) NULL,
 	[sLogoUrl] [nvarchar](max) NULL,
 	[iOwnerId] [int] NOT NULL,
-	[iRoleId] [int] NOT NULL,
 	[sPlan] [nvarchar](50) NULL,
 	[nMaxMembers] [int] NULL,
 	[dtCreatedAt] [datetime] NULL,
@@ -683,6 +754,8 @@ GO
 ALTER TABLE [dbo].[tblBoards] ADD  DEFAULT ((1)) FOR [nVersion]
 GO
 ALTER TABLE [dbo].[tblBoards] ADD  DEFAULT (getdate()) FOR [dtCreatedAt]
+GO
+ALTER TABLE [dbo].[tblBoards] ADD  DEFAULT (getdate()) FOR [dtUpdatedAt]
 GO
 ALTER TABLE [dbo].[tblChatChannels] ADD  DEFAULT ((0)) FOR [bIsDefault]
 GO
@@ -740,6 +813,8 @@ ALTER TABLE [dbo].[tblPermissions] ADD  DEFAULT (getdate()) FOR [dtCreatedAt]
 GO
 ALTER TABLE [dbo].[tblPermissions] ADD  DEFAULT (getdate()) FOR [dtUpdatedAt]
 GO
+ALTER TABLE [dbo].[tblProjectInvitations] ADD  CONSTRAINT [DF_tblProjectInvitations_dtCreatedAt]  DEFAULT (getdate()) FOR [dtCreatedAt]
+GO
 ALTER TABLE [dbo].[tblProjectMembers] ADD  DEFAULT (getdate()) FOR [dtAddedAt]
 GO
 ALTER TABLE [dbo].[tblProjects] ADD  DEFAULT ('active') FOR [sStatus]
@@ -761,6 +836,8 @@ GO
 ALTER TABLE [dbo].[tblRoles] ADD  DEFAULT (getdate()) FOR [dtCreatedAt]
 GO
 ALTER TABLE [dbo].[tblRoles] ADD  DEFAULT (getdate()) FOR [dtUpdatedAt]
+GO
+ALTER TABLE [dbo].[tblRoles] ADD  CONSTRAINT [DF_tblRoles_sScope]  DEFAULT ('workspace') FOR [sScope]
 GO
 ALTER TABLE [dbo].[tblSearchIndex] ADD  DEFAULT (getdate()) FOR [dtUpdatedAt]
 GO
@@ -786,11 +863,9 @@ ALTER TABLE [dbo].[tblUsers] ADD  DEFAULT (getdate()) FOR [dtCreatedAt]
 GO
 ALTER TABLE [dbo].[tblUsers] ADD  DEFAULT ((1)) FOR [bIsActive]
 GO
-ALTER TABLE [dbo].[tblWorkspaceInvitations] ADD  DEFAULT ('member') FOR [sRole]
+ALTER TABLE [dbo].[tblUsers] ADD  DEFAULT ((0)) FOR [bIsSuperAdmin]
 GO
 ALTER TABLE [dbo].[tblWorkspaceInvitations] ADD  DEFAULT (getdate()) FOR [dtCreatedAt]
-GO
-ALTER TABLE [dbo].[tblWorkspaceMembers] ADD  DEFAULT ('member') FOR [sRole]
 GO
 ALTER TABLE [dbo].[tblWorkspaceMembers] ADD  DEFAULT (getdate()) FOR [dtJoinedAt]
 GO
@@ -902,6 +977,31 @@ GO
 ALTER TABLE [dbo].[tblNotifications]  WITH CHECK ADD FOREIGN KEY([iTaskId])
 REFERENCES [dbo].[tblTasks] ([iId])
 GO
+ALTER TABLE [dbo].[tblNotifications]  WITH CHECK ADD  CONSTRAINT [FK_Notifications_Workspace] FOREIGN KEY([iWorkspaceId])
+REFERENCES [dbo].[tblWorkspaces] ([iId])
+GO
+ALTER TABLE [dbo].[tblNotifications] CHECK CONSTRAINT [FK_Notifications_Workspace]
+GO
+ALTER TABLE [dbo].[tblProjectInvitations]  WITH CHECK ADD  CONSTRAINT [FK_tblProjectInvitations_InvitedBy] FOREIGN KEY([iInvitedBy])
+REFERENCES [dbo].[tblUsers] ([iId])
+GO
+ALTER TABLE [dbo].[tblProjectInvitations] CHECK CONSTRAINT [FK_tblProjectInvitations_InvitedBy]
+GO
+ALTER TABLE [dbo].[tblProjectInvitations]  WITH CHECK ADD  CONSTRAINT [FK_tblProjectInvitations_Project] FOREIGN KEY([iProjectId])
+REFERENCES [dbo].[tblProjects] ([iId])
+GO
+ALTER TABLE [dbo].[tblProjectInvitations] CHECK CONSTRAINT [FK_tblProjectInvitations_Project]
+GO
+ALTER TABLE [dbo].[tblProjectInvitations]  WITH CHECK ADD  CONSTRAINT [FK_tblProjectInvitations_Role] FOREIGN KEY([iRoleId])
+REFERENCES [dbo].[tblRoles] ([iRoleId])
+GO
+ALTER TABLE [dbo].[tblProjectInvitations] CHECK CONSTRAINT [FK_tblProjectInvitations_Role]
+GO
+ALTER TABLE [dbo].[tblProjectInvitations]  WITH CHECK ADD  CONSTRAINT [FK_tblProjectInvitations_Workspace] FOREIGN KEY([iWorkspaceId])
+REFERENCES [dbo].[tblWorkspaces] ([iId])
+GO
+ALTER TABLE [dbo].[tblProjectInvitations] CHECK CONSTRAINT [FK_tblProjectInvitations_Workspace]
+GO
 ALTER TABLE [dbo].[tblProjectMembers]  WITH CHECK ADD FOREIGN KEY([iAddedBy])
 REFERENCES [dbo].[tblUsers] ([iId])
 GO
@@ -989,16 +1089,16 @@ GO
 ALTER TABLE [dbo].[tblTaskWatchers]  WITH CHECK ADD FOREIGN KEY([iUserId])
 REFERENCES [dbo].[tblUsers] ([iId])
 GO
-ALTER TABLE [dbo].[tblUsers]  WITH CHECK ADD  CONSTRAINT [FK_tblUsers_tblRoles_iRoleId] FOREIGN KEY([iRoleId])
-REFERENCES [dbo].[tblRoles] ([iRoleId])
-GO
-ALTER TABLE [dbo].[tblUsers] CHECK CONSTRAINT [FK_tblUsers_tblRoles_iRoleId]
-GO
 ALTER TABLE [dbo].[tblWorkspaceInvitations]  WITH CHECK ADD FOREIGN KEY([iInvitedBy])
 REFERENCES [dbo].[tblUsers] ([iId])
 GO
 ALTER TABLE [dbo].[tblWorkspaceInvitations]  WITH CHECK ADD FOREIGN KEY([iWorkspaceId])
 REFERENCES [dbo].[tblWorkspaces] ([iId])
+GO
+ALTER TABLE [dbo].[tblWorkspaceInvitations]  WITH CHECK ADD  CONSTRAINT [FK_tblWorkspaceInvitations_iRoleId] FOREIGN KEY([iRoleId])
+REFERENCES [dbo].[tblRoles] ([iRoleId])
+GO
+ALTER TABLE [dbo].[tblWorkspaceInvitations] CHECK CONSTRAINT [FK_tblWorkspaceInvitations_iRoleId]
 GO
 ALTER TABLE [dbo].[tblWorkspaceMembers]  WITH CHECK ADD FOREIGN KEY([iInvitedBy])
 REFERENCES [dbo].[tblUsers] ([iId])
@@ -1009,11 +1109,11 @@ GO
 ALTER TABLE [dbo].[tblWorkspaceMembers]  WITH CHECK ADD FOREIGN KEY([iWorkspaceId])
 REFERENCES [dbo].[tblWorkspaces] ([iId])
 GO
-ALTER TABLE [dbo].[tblWorkspaces]  WITH CHECK ADD FOREIGN KEY([iOwnerId])
-REFERENCES [dbo].[tblUsers] ([iId])
-GO
-ALTER TABLE [dbo].[tblWorkspaces]  WITH CHECK ADD  CONSTRAINT [FK_tblWorkspaces_iRoleId] FOREIGN KEY([iRoleId])
+ALTER TABLE [dbo].[tblWorkspaceMembers]  WITH CHECK ADD  CONSTRAINT [FK_tblWorkspaceMembers_iRoleId] FOREIGN KEY([iRoleId])
 REFERENCES [dbo].[tblRoles] ([iRoleId])
 GO
-ALTER TABLE [dbo].[tblWorkspaces] CHECK CONSTRAINT [FK_tblWorkspaces_iRoleId]
+ALTER TABLE [dbo].[tblWorkspaceMembers] CHECK CONSTRAINT [FK_tblWorkspaceMembers_iRoleId]
+GO
+ALTER TABLE [dbo].[tblWorkspaces]  WITH CHECK ADD FOREIGN KEY([iOwnerId])
+REFERENCES [dbo].[tblUsers] ([iId])
 GO
