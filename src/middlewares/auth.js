@@ -3,50 +3,108 @@ import { apiHandler, executeStoredProcedure } from "../utils/index.js";
 import {
   cacheRolePermissions,
   getRolePermissions,
-  storeRefreshToken,
 } from "../services/redis-service.js";
 import { v4 as uuidv4 } from "uuid";
 
+// ── 1. Validate Access Token ─────────────────────────────
 export const validateAccessToken = async (req, res, next) => {
   const authorizationHeader = req.headers.authorization;
-  if (authorizationHeader) {
-    const token = authorizationHeader.split(" ")[1];
-    let data;
-    try {
-      data = jwt.verify(token, process.env.JWT_ACCESS_TOKEN_SECRET);
-    } catch (error) {
-      if (error.type === "expired" || error.type === "invalid") {
-        return apiHandler.sendUnauthorizedError(
-          res,
-          null,
-          error.type === "expired" ? "Token expired" : "Invalid Token",
-        );
-      } else {
-        return apiHandler.sendUnauthorizedError(
-          res,
-          null,
-          "Authentication Error",
-        );
-      }
+
+  if (!authorizationHeader) {
+    return apiHandler.sendUnauthorizedError(res, null, "Token is missing");
+  }
+
+  const token = authorizationHeader.split(" ")[1];
+
+  try {
+    const data = jwt.verify(token, process.env.JWT_ACCESS_TOKEN_SECRET);
+    req.user = data; // { sub, email, fullName, isSuperAdmin }
+    next();
+  } catch (error) {
+    const message =
+      error.name === "TokenExpiredError"
+        ? "Token expired"
+        : error.name === "JsonWebTokenError"
+          ? "Invalid token"
+          : "Authentication error";
+    return apiHandler.sendUnauthorizedError(res, null, message);
+  }
+};
+// middleware/authorize.js
+
+export const populatePermissions = async (req, res, next) => {
+  try {
+    if (req.user.isSuperAdmin) {
+      req.user.permissions = { "*": ["*"] };
+      return next();
     }
 
-    req.auth = data;
+    const userId = req.user.sub;
+    const workspaceId = parseInt(req.params.workspaceId) || null;
+    const projectId = parseInt(req.params.projectId) || null;
+
+    const result = await executeStoredProcedure("uspGetUserPermissions", {
+      iUserId: userId,
+      iWorkspaceId: workspaceId,
+      iProjectId: projectId,
+    });
+
+    const memberInfo = result.recordsets[0]?.[0]; // membership + role info
+    const permissions = result.recordsets[1]; // permission rows
+
+    // ✅ Not a member of THIS workspace/project → block immediately
+    if (!memberInfo) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // ✅ Attach role info for controllers to use if needed
+    req.user.roleId = memberInfo.iRoleId;
+    req.user.roleName = memberInfo.sRoleName;
+
+    // ✅ Attach permissions
+    req.user.permissions = transformPermissions(permissions);
+
     next();
-  } else {
-    return apiHandler.sendUnauthorizedError(res, null, "Token is missing");
+  } catch (error) {
+    console.error("populatePermissions error:", error);
+    return res.status(500).json({ message: "Failed to load permissions" });
   }
 };
 
+// ── 3. Fixed transformPermissions ────────────────────────
+// Builds: { "Tasks": ["create","edit"], "Board": ["view"] }
+
+export const transformPermissions = (permissionRows) => {
+  const permissions = {};
+
+  permissionRows.forEach((row) => {
+    // ✅ 'row' matches parameter
+    const module = row.ModuleName;
+    const permission = row.PermissionName;
+
+    if (!permissions[module]) {
+      permissions[module] = [];
+    }
+    permissions[module].push(permission);
+  });
+
+  return permissions;
+};
+
+// ── 4. Authorize by Permission ───────────────────────────
 export const authorizePermission = (resource, action) => {
   return (req, res, next) => {
-    const permissions = req.user.permissions;
+    const permissions = req.user?.permissions;
 
-    // Resource not present
+    // Super admin wildcard
+    if (permissions?.["*"]?.includes("*")) {
+      return next();
+    }
+
     if (!permissions || !permissions[resource]) {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    // Action not allowed
     if (!permissions[resource].includes(action)) {
       return res.status(403).json({ message: "Access denied" });
     }
@@ -55,6 +113,7 @@ export const authorizePermission = (resource, action) => {
   };
 };
 
+// ── 5. Token Creators ────────────────────────────────────
 export const createAccessToken = (payload) => {
   return jwt.sign(payload, process.env.JWT_ACCESS_TOKEN_SECRET, {
     expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || "15m",
@@ -64,65 +123,13 @@ export const createAccessToken = (payload) => {
 
 export const createRefreshToken = async (userId) => {
   const jti = uuidv4();
-
   const token = jwt.sign(
-    {
-      sub: userId,
-      jti,
-    },
+    { sub: userId, jti },
     process.env.JWT_REFRESH_TOKEN_SECRET,
     {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "1d",
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
       issuer: "SriHarsha",
     },
   );
-  // await storeRefreshToken(jti, token);
   return token;
-};
-
-export const populatePermissions = async (req, res, next) => {
-  try {
-    const roleId = req.user.iRoleId;
-    if (!roleId) {
-      return res.status(401).json({ message: "Role not found" });
-    }
-
-    // 1️⃣ Check Redis (ROLE-WISE)
-    const cachedPermissions = await getRolePermissions(roleId);
-    if (cachedPermissions) {
-      req.user.permissions = cachedPermissions;
-      return next();
-    }
-
-    // 2️⃣ Fetch from DB
-    const permissionRes = await executeStoredProcedure(
-      "uspGetModulesByRoleId",
-      { iRoleId: roleId },
-    );
-
-    const permissionMap = permissionRes.recordsets[0];
-    const permissions = transformPermissions(permissionMap);
-
-    // 3️⃣ Attach + cache
-    req.user.permissions = permissions;
-    await cacheRolePermissions(roleId, permissions);
-
-    next();
-  } catch (error) {
-    console.error("populatePermissions error:", error);
-    return res.status(500).json({ message: "Failed to load permissions" });
-  }
-};
-
-export const transformPermissions = (permissionMap) => {
-  let permissions = {};
-  permissionMap.forEach((t) => {
-    let module = row.ModuleName;
-    let permission = row.PermissionName;
-    if (!permissions[module]) {
-      permissions[module] = [];
-    }
-    permissions[module].push(permission);
-  });
-  return permissions;
 };
