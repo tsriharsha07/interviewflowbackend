@@ -39,13 +39,12 @@ const login = async (req, res, next) => {
     });
 
     const userData = getUserData.recordsets[0];
-
     const accessToken = createAccessToken({
-      iUserId: userData[0].iUserId,
+      iUserId: userData[0].iId,
     });
-
+    console.log(accessToken);
     const refreshToken = await createRefreshToken({
-      iUserId: userData[0].iUserId,
+      iUserId: userData[0].iId,
     });
     return apiHandler.sendSucess(
       res,
@@ -83,7 +82,7 @@ const register = async (req, res) => {
       sFullName,
     });
 
-    return apiHandler.sendSucess(res, result, "User registered successfully");
+    return apiHandler.sendSucess(res, {}, "User registered successfully");
   } catch (err) {
     console.error(err);
     return apiHandler.sendError(

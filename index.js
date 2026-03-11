@@ -14,6 +14,7 @@ import cors from "cors";
 import http from "http";
 import cookieParser from "cookie-parser";
 import authRouter from "./src/routes/auth.routes.js";
+import workspaceRouter from "./src/routes/workspace.routes.js";
 import { connectRedis } from "./src/config/redisConfig.js";
 
 const port = process.env.PORT;
@@ -54,6 +55,7 @@ app.use((req, res, next) => {
 });
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/workspace", workspaceRouter);
 
 // 404 handler AFTER routes
 app.use((req, res, next) => {

@@ -1,19 +1,23 @@
+import express from "express";
+import multer from "multer";
+import path from "path";
 
-import express from 'express'
-import multer from 'multer';
-import path from 'path';
+import fs from "fs";
 
+const uploadDir = "uploads";
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
-// Storage config (store locally for demo)
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, "uploads/"); // make sure uploads/ exists
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
 });
 
 const upload = multer({ storage });
 
-export { upload }
+export { upload };
