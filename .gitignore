@@ -121,3 +121,6 @@ dist
 #package json 
 package-lock.json
 .qodo
+
+.env
+.env.*

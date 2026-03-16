@@ -21,6 +21,7 @@ export const validateAccessToken = async (req, res, next) => {
     req.user = data; // { sub, email, fullName, isSuperAdmin }
     next();
   } catch (error) {
+    console.log(error);
     const message =
       error.name === "TokenExpiredError"
         ? "Token expired"

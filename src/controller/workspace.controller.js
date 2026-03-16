@@ -6,7 +6,8 @@ import {
 } from "../utils/index.js";
 import path from "path";
 import crypto from "crypto";
-
+import { sendMail } from "../utils/emailService.js";
+import { getWorkspaceInviteEmail } from "../templates/inviteMemberToWorkSpace.js";
 export const getWorkSpaces = async (req, res, next) => {
   try {
     const { iUserId } = req.user;
@@ -120,7 +121,20 @@ export const inviteMembersToWorkSpace = async (req, res) => {
     });
 
     const invitation = result?.recordset?.[0] || {};
+    const inviteLink = `${process.env.FRONTEND_URL}/invite?token=${token}`;
 
+    const html = getWorkspaceInviteEmail({
+      inviterName: invitation.sName,
+      workspaceName: invitation.workspaceName,
+      inviteLink,
+    });
+
+    await sendMail({
+      to: email,
+      subject: "You're invited to join a workspace",
+      text: "Workspace Invite Email",
+      html,
+    });
     return apiHandler.sendSucess(
       res,
       {
