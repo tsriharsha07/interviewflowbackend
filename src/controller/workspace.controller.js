@@ -5,6 +5,7 @@ import {
   uploadToCloudinary,
 } from "../utils/index.js";
 import path from "path";
+import crypto from "crypto";
 
 export const getWorkSpaces = async (req, res, next) => {
   try {
@@ -83,5 +84,119 @@ export const createWorkSpace = async (req, res, next) => {
     console.log("Errpr", error);
     console.error("Error occured while creaeting workspace", error);
     apiHandler.sendServerError(res, {}, error);
+  }
+};
+
+export const inviteMembersToWorkSpace = async (req, res) => {
+  try {
+    const { iUserId } = req.user;
+    const { email, roleName, iWorkSpaceId } = req.body;
+
+    if (!email || !roleName) {
+      return apiHandler.sendError(res, {}, "Email and roleName are required");
+    }
+
+    const checkEmailExists = await executeQuery(
+      "SELECT 1 FROM tblUsers WHERE sEmail = @email",
+      { email },
+    );
+
+    if (!checkEmailExists.length) {
+      return apiHandler.sendError(res, {}, "Email doesn't exist in the system");
+    }
+    // Generate token
+    const token = crypto.randomBytes(32).toString("hex");
+
+    // Hash token
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    const result = await executeStoredProcedure("uspInviteWorkspaceMember", {
+      WorkspaceId: iWorkSpaceId,
+      InvitedBy: iUserId,
+      Email: email,
+      TokenHash: tokenHash,
+      RoleName: `WORKSPACE_${roleName.toUpperCase()}`,
+      ExpiryHours: 48,
+    });
+
+    const invitation = result?.recordset?.[0] || {};
+
+    return apiHandler.sendSucess(
+      res,
+      {
+        ...invitation,
+        token, // send token to build invite link
+      },
+      "Invitation sent successfully",
+    );
+  } catch (error) {
+    console.log("Error inviting member:", error);
+
+    return apiHandler.sendServerError(res, {}, "Failed to send invitation");
+  }
+};
+
+export const validateWorkspaceInvite = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return apiHandler.sendError(res, {}, "Token is required");
+    }
+
+    // Hash the token (same way as during invite)
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    const result = await executeStoredProcedure(
+      "uspValidateWorkspaceInvitation",
+      {
+        TokenHash: tokenHash,
+      },
+    );
+
+    const invite = result?.recordset?.[0];
+
+    if (!invite) {
+      return apiHandler.sendError(res, {}, "Invalid invitation link");
+    }
+
+    return apiHandler.sendSucess(res, invite, "Invitation is valid");
+  } catch (error) {
+    console.log("Error validating invite", error);
+    apiHandler.sendServerError(res, {}, "Internal Server Error");
+  }
+};
+
+export const acceptWorkspaceInvitation = async (req, res) => {
+  try {
+    const { token } = req.body;
+    const { iUserId } = req.user;
+
+    if (!token) {
+      return apiHandler.sendError(res, {}, "Token is required");
+    }
+
+    // hash token
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    const result = await executeStoredProcedure(
+      "uspAcceptWorkspaceInvitation",
+      {
+        TokenHash: tokenHash,
+        UserId: iUserId,
+      },
+    );
+
+    const data = result?.recordset?.[0];
+
+    return apiHandler.sendSucess(res, data, "Successfully joined workspace");
+  } catch (error) {
+    console.log("Accept invite error:", error);
+
+    return apiHandler.sendServerError(
+      res,
+      {},
+      error.message || "Failed to accept invitation",
+    );
   }
 };

@@ -42,7 +42,6 @@ const login = async (req, res, next) => {
     const accessToken = createAccessToken({
       iUserId: userData[0].iId,
     });
-    console.log(accessToken);
     const refreshToken = await createRefreshToken({
       iUserId: userData[0].iId,
     });

@@ -2,6 +2,9 @@ import { Router } from "express";
 import {
   createWorkSpace,
   getWorkSpaces,
+  validateWorkspaceInvite,
+  acceptWorkspaceInvitation,
+  inviteMembersToWorkSpace,
 } from "../controller/workspace.controller.js";
 import {
   authorizePermission,
@@ -20,5 +23,9 @@ router.post(
   upload.single("Image"),
   createWorkSpace,
 );
+
+router.post("/invite-member", validateAccessToken, inviteMembersToWorkSpace);
+router.post("/validate-invite", validateAccessToken, validateWorkspaceInvite);
+router.post("/accept-invite", validateAccessToken, acceptWorkspaceInvitation);
 
 export default router;
