@@ -45,21 +45,21 @@ export const createWorkSpace = async (req, res, next) => {
     const { sName, sSlug, sDescription, nMaxNumbers } = req.body;
     let logoUrl;
     if (!sName || !sSlug || !sDescription || !nMaxNumbers) {
-      return apiHandler.sendBadRequest(res, {}, "All fields are required");
+      return apiHandler.sendNotFound(res, {}, "All fields are required");
     }
 
     if (!sName || !sSlug || !sDescription || !nMaxNumbers) {
-      return apiHandler.sendBadRequest(res, {}, "Missing required fields");
+      return apiHandler.sendNotFound(res, {}, "Missing required fields");
     }
 
     const maxMembers = Number(nMaxNumbers);
 
     if (isNaN(maxMembers) || maxMembers <= 0) {
-      return apiHandler.sendBadRequest(res, {}, "Invalid member count");
+      return apiHandler.sendNotFound(res, {}, "Invalid member count");
     }
 
     if (maxMembers > 15) {
-      return apiHandler.sendBadRequest(res, {}, "Workspace member limit is 15");
+      return apiHandler.sendNotFound(res, {}, "Workspace member limit is 15");
     }
     if (req.file) {
       const absolutePath = path.resolve(req.file.path); // converts to absolute path
